@@ -1,0 +1,30 @@
+{
+    "use": "elasticsearch",
+    "fastTesting": false, //IMPORTANT VARIABLE!  true WILL RUN TESTS FASTER, false INCLUDES NETWORK RESPONSE TESTS
+    "backend_es": {
+        "index": "testdata",
+        "type": "test_result",
+        "host": "http://localhost",
+        "port": 9200,
+        "schema": {
+            "settings": {"index": {"number_of_shards": 1}},
+            "$ref": "//.../resources/schema/basic_schema.json.template?type=test_result"
+        },
+        "debug": true
+    },
+    "constants": {
+        "pyLibrary.env.http.default_headers": {
+            "Referer": "jx-elasticsearch tests"
+        }
+    },
+    "elasticsearch": {
+        "host": "http://localhost",
+        "port": 9200,
+        "index": "testdata",
+        "type": "test_result",
+        "debug": true
+    },
+    "debug": {
+        "trace": true
+    }
+}
