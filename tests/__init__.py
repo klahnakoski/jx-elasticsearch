@@ -65,18 +65,15 @@ class ESUtils(object):
     @override
     def __init__(
         self,
-        testing,  # location of the ActiveData server endpoints we are testing
-        backend_es,  # the ElasticSearch settings for filling the backend
-        fast_testing=False,
+        elasticsearch,  # the ElasticSearch settings for filling the backend
         kwargs=None
     ):
-        if backend_es.schema == None:
+        if elasticsearch.schema == None:
             Log.error("Expecting backed_es to have a schema defined")
 
         letters = text_type(ascii_lowercase)
         self.random_letter = letters[int(Date.now().unix / 30) % 26]
-        self.testing = testing
-        self.backend_es = backend_es
+        self.elasticsearch = elasticsearch
         self.settings = kwargs
         self._es_test_settings = None
         self._es_cluster = None
@@ -85,21 +82,14 @@ class ESUtils(object):
         if not jx_containers.config.default:
             jx_containers.config.default = {
                 "type": "elasticsearch",
-                "settings": backend_es
+                "settings": elasticsearch
             }
 
-        if not fast_testing:
-            self.server = http
-        else:
-            Log.alert("TESTS WILL RUN FAST, BUT NOT ALL TESTS ARE RUN!\nEnsure the `file://tests/config/elasticsearch.json#fastTesting=true` to turn on the network response tests.")
-            # WE WILL USE THE ActiveServer CODE, AND CONNECT TO ES DIRECTLY.
-            # THIS MAKES FOR SLIGHTLY FASTER TEST TIMES BECAUSE THE PROXY IS
-            # MISSING
-            self.server = FakeHttp()
-            jx_containers.config.default = {
-                "type": "elasticsearch",
-                "settings": kwargs.backend_es.copy()
-            }
+        self.server = FakeHttp()
+        jx_containers.config.default = {
+            "type": "elasticsearch",
+            "settings": kwargs.elasticsearch.copy()
+        }
 
     def setUp(self):
         global NEXT
@@ -107,7 +97,7 @@ class ESUtils(object):
         index_name = "testing_" + ("000" + text_type(NEXT))[-3:] + "_" + self.random_letter
         NEXT += 1
 
-        self._es_test_settings = self.backend_es.copy()
+        self._es_test_settings = self.elasticsearch.copy()
         self._es_test_settings.index = index_name
         self._es_cluster = elasticsearch.Cluster(self._es_test_settings)
 
@@ -117,10 +107,11 @@ class ESUtils(object):
             self._es_cluster.delete_index(self._es_test_settings.index)
             ESUtils.indexes.remove(self._es_test_settings.index)
 
-    def setUpClass(self):
+    @classmethod
+    def setUpClass(cls):
         while True:
             try:
-                es = test_jx.global_settings.backend_es
+                es = test_jx.global_settings.elasticsearch
                 http.get_json(URL(es.host, port=es.port))
                 break
             except Exception as e:
@@ -131,7 +122,7 @@ class ESUtils(object):
                     Log.error("Server raised exception", e)
 
         # REMOVE OLD INDEXES
-        cluster = elasticsearch.Cluster(test_jx.global_settings.backend_es)
+        cluster = elasticsearch.Cluster(test_jx.global_settings.elasticsearch)
         aliases = cluster.get_aliases()
         for a in aliases:
             try:
@@ -142,11 +133,11 @@ class ESUtils(object):
             except Exception as e:
                 Log.warning("Problem removing {{index|quote}}", index=a.index, cause=e)
 
+
     def tearDownClass(self):
-        cluster = elasticsearch.Cluster(test_jx.global_settings.backend_es)
         for i in ESUtils.indexes:
             try:
-                cluster.delete_index(i)
+                self._es_cluster.delete_index(i)
                 Log.note("remove index {{index}}", index=i)
             except Exception as e:
                 pass
@@ -170,17 +161,9 @@ class ESUtils(object):
         _settings = self._es_test_settings  # ALREADY COPIED AT setUp()
 
         try:
-            url = "file://resources/schema/basic_schema.json.template?{{.|url}}"
-            url = expand_template(url, {
-                "type": _settings.type,
-                "metadata": subtest.metadata
-            })
-            _settings.schema = mo_json_config.get(url)
-
             # MAKE CONTAINER
             container = self._es_cluster.get_or_create_index(
                 typed=typed,
-                schema=subtest.schema,
                 kwargs=_settings
             )
             container.add_alias(_settings.index)
@@ -226,13 +209,13 @@ class ESUtils(object):
 
                 subtest.query.format = format
                 subtest.query.meta.testing = (num_expectations == 1)  # MARK FIRST QUERY FOR TESTING SO FULL METADATA IS AVAILABLE BEFORE QUERY EXECUTION
-                query = unicode2utf8(value2json(subtest.query))
+                query = subtest.query
                 # EXECUTE QUERY
-                response = self.try_till_response(self.testing.query, data=query)
-
-                if response.status_code != 200:
-                    error(response)
-                result = json2value(utf82unicode(response.all_content))
+                try:
+                    endpoint = jx_elasticsearch.new_instance(self._es_test_settings)
+                    result = endpoint.query(query)
+                except Exception as e:
+                    Log.error("Problem executing", cause=e)
 
                 container = jx_elasticsearch.new_instance(self._es_test_settings)
                 query = QueryOp.wrap(subtest.query, container, container.namespace)

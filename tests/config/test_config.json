@@ -1,28 +1,23 @@
 {
     "use": "elasticsearch",
-    "fastTesting": false, //IMPORTANT VARIABLE!  true WILL RUN TESTS FASTER, false INCLUDES NETWORK RESPONSE TESTS
-    "backend_es": {
-        "index": "testdata",
-        "type": "test_result",
-        "host": "http://localhost",
-        "port": 9200,
-        "schema": {
-            "settings": {"index": {"number_of_shards": 1}},
-            "$ref": "//.../resources/schema/basic_schema.json.template?type=test_result"
-        },
-        "debug": true
-    },
-    "constants": {
-        "pyLibrary.env.http.default_headers": {
-            "Referer": "jx-elasticsearch tests"
-        }
-    },
     "elasticsearch": {
         "host": "http://localhost",
         "port": 9200,
         "index": "testdata",
         "type": "test_result",
-        "debug": true
+        "debug": true,
+        "schema": {
+            "settings": {"index": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "max_inner_result_window": 100000
+            }}
+        }
+    },
+    "constants": {
+        "pyLibrary.env.http.default_headers": {
+            "Referer": "jx-elasticsearch tests"
+        }
     },
     "debug": {
         "trace": true
