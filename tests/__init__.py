@@ -20,7 +20,7 @@ from jx_base import container as jx_containers
 from jx_base.query import QueryOp
 import jx_elasticsearch
 from jx_python import jx
-from mo_dots import Data, coalesce, is_list, listwrap, literal_field, unwrap, wrap
+from mo_dots import Data, coalesce, is_list, listwrap, literal_field, unwrap, wrap, is_data
 from mo_files.url import URL
 from mo_future import is_text, text_type
 from mo_json import json2value, value2json
@@ -214,7 +214,10 @@ class ESUtils(object):
                 try:
                     endpoint = jx_elasticsearch.new_instance(self._es_test_settings)
                     result = endpoint.query(query)
-                    result = result.__data__()
+                    if is_data(result):
+                        result = wrap(result)
+                    else:
+                        result = result.__data__()
                 except Exception as e:
                     raise Log.error("Problem executing", cause=e)
 
