@@ -1,5 +1,11 @@
 # `jx_elasticsearch`
 
+|Branch      |Status   |
+|------------|---------|
+|master      | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=master)](https://travis-ci.org/klahnakoski/jx-elasticsearch) |
+|dev         | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=dev)](https://travis-ci.org/klahnakoski/jx-elasticsearch)    |
+
+
 This library implements [JSON Query Expressions](https://github.com/klahnakoski/JSONQueryExpressionTests) atop an Elasticsearch.
 
 
