@@ -10,19 +10,20 @@
 from __future__ import absolute_import, division, unicode_literals
 
 import itertools
-from datetime import date, datetime
-from decimal import Decimal
 
 import jx_base
 from jx_base import TableDesc, Column
 from jx_base.namespace import Namespace
 from jx_base.query import QueryOp
-from jx_elasticsearch.meta_columns import ColumnList
 from jx_python import jx
 from jx_python.containers.list_usingPythonList import ListContainer
-from mo_dots import Data, FlatList, Null, NullType, ROOT_PATH, coalesce, concat_field, is_list, literal_field, relative_field, set_default, split_field, startswith_field, tail_field, wrap
-from mo_future import long, none_type, text_type
-from mo_json import BOOLEAN, EXISTS, INTEGER, OBJECT, STRING, STRUCT
+from mo_dots import Data, ROOT_PATH, coalesce, concat_field, is_list, literal_field, relative_field, set_default, \
+    split_field, startswith_field, tail_field, wrap
+from mo_dots import Null
+from mo_future import text
+from mo_future import text_type
+from mo_json import BOOLEAN, EXISTS, STRUCT
+from mo_json import INTEGER, STRING
 from mo_json.typed_encoder import BOOLEAN_TYPE, EXISTS_TYPE, NUMBER_TYPE, STRING_TYPE, unnest_path, untype_path
 from mo_kwargs import override
 from mo_logs import Log
@@ -32,6 +33,8 @@ from mo_threads import Queue, THREAD_STOP, Thread, Till
 from mo_times import Date, HOUR, MINUTE, Timer, WEEK
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import _get_best_type_from_mapping, es_type_to_json_type
+
+from jx_elasticsearch.meta_columns import ColumnList
 
 MAX_COLUMN_METADATA_AGE = 12 * HOUR
 ENABLE_META_SCAN = True
@@ -51,7 +54,7 @@ class ElasticsearchMetadata(Namespace):
 
     @override
     def __new__(cls, kwargs, *args, **_kwargs):
-        es_cluster = elasticsearch.Cluster(kwargs)
+        es_cluster = elasticsearch.Cluster(kwargs)  # NOTICE cls IS PASSED IN
         output = known_clusters.get(id(es_cluster))
         if output is None:
             output = object.__new__(cls)
@@ -294,7 +297,7 @@ class ElasticsearchMetadata(Namespace):
                     if len(pending) > 10:
                         Log.note("waiting for {{num}} columns to update by {{timestamp}}", num=len(pending), timestamp=after)
                     else:
-                        Log.note("waiting for columns to update by {{timestamp}}; {{columns|json}}", timestamp=after, columns=[c.es_index + "." + c.es_column + " id="+text_type(id(c)) for c in pending])
+                        Log.note("waiting for columns to update by {{timestamp}}; {{columns|json}}", timestamp=after, columns=[concat_field(c.es_index, c.es_column) + " id="+text(id(c)) for c in pending])
                 Till(seconds=1).wait()
             return columns
         except Exception as e:
@@ -896,7 +899,7 @@ python_type_to_es_type = {
     NullType: "undefined",
     bool: "boolean",
     str: "string",
-    text_type: "string",
+    text: "string",
     int: "integer",
     long: "integer",
     float: "double",

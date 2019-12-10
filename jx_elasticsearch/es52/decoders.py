@@ -9,25 +9,25 @@
 #
 from __future__ import absolute_import, division, unicode_literals
 
-from mo_future import is_text, is_binary
+import mo_math
 from jx_base.dimensions import Dimension
 from jx_base.domains import DefaultDomain, PARTITION, SimpleSetDomain
 from jx_base.expressions import ExistsOp, FirstOp, GtOp, GteOp, LeavesOp, LtOp, LteOp, MissingOp, TupleOp, Variable
-from jx_base.query import DEFAULT_LIMIT, MAX_LIMIT
 from jx_base.language import is_op
-from jx_elasticsearch.es52.es_query import Aggs, FilterAggs, FiltersAggs, NestedAggs, RangeAggs, TermsAggs
-from jx_elasticsearch.es52.expressions import AndOp, InOp, Literal, NotOp
-from jx_elasticsearch.es52.painless import LIST_TO_PIPE, Painless
-from jx_elasticsearch.es52.util import pull_functions
+from jx_base.query import DEFAULT_LIMIT, MAX_LIMIT
 from jx_python import jx
 from mo_dots import Data, coalesce, concat_field, is_data, literal_field, relative_field, set_default, wrap
-from mo_future import first, text_type, transpose
+from mo_future import first, is_text, text, transpose
 from mo_json import EXISTS, OBJECT, STRING
 from mo_json.typed_encoder import EXISTS_TYPE, NESTED_TYPE, untype_path
 from mo_logs import Log
 from mo_logs.strings import expand_template, quote
-import mo_math
 from mo_math import MAX, MIN
+
+from jx_elasticsearch.es52.es_query import Aggs, FilterAggs, FiltersAggs, NestedAggs, RangeAggs, TermsAggs
+from jx_elasticsearch.es52.expressions import AndOp, InOp, Literal, NotOp
+from jx_elasticsearch.es52.painless import LIST_TO_PIPE, Painless
+from jx_elasticsearch.es52.util import pull_functions
 
 DEBUG = False
 
@@ -195,7 +195,7 @@ class SetDecoder(AggsDecoder):
             match = TermsAggs(
                 "_match",
                 {
-                    "script": text_type(value.to_es_script(self.schema)),
+                    "script": text(value.to_es_script(self.schema)),
                     "size": limit
                 },
                 self
@@ -263,7 +263,7 @@ def _range_composer(self, edge, domain, es_query, to_float, schema):
     if is_op(edge.value, Variable):
         calc = {"field": first(schema.leaves(edge.value.var)).es_column}
     else:
-        calc = {"script": text_type(Painless[edge.value].to_es_script(schema))}
+        calc = {"script": text(Painless[edge.value].to_es_script(schema))}
     calc['ranges'] = [{"from": to_float(p.min), "to": to_float(p.max)} for p in domain.partitions]
 
     return output.add(RangeAggs("_match", calc, self).add(es_query))
@@ -327,7 +327,7 @@ class GeneralRangeDecoder(AggsDecoder):
                 LteOp([range.min, Literal(self.to_float(p.min))]),
                 GtOp([range.max, Literal(self.to_float(p.min))])
             ])
-            aggs.add(FilterAggs("_match" + text_type(i), filter_, self).add(es_query))
+            aggs.add(FilterAggs("_match" + text(i), filter_, self).add(es_query))
 
         return aggs
 
@@ -693,8 +693,8 @@ class DimFieldListDecoder(SetDecoder):
             self.parts.append(value)
 
     def done_count(self):
-        columns = map(text_type, range(len(self.fields)))
-        parts = wrap([{text_type(i): p for i, p in enumerate(part)} for part in set(self.parts)])
+        columns = map(text, range(len(self.fields)))
+        parts = wrap([{text(i): p for i, p in enumerate(part)} for part in set(self.parts)])
         self.parts = None
         sorted_parts = jx.sort(parts, columns)
 

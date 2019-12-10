@@ -1,2 +1,6 @@
 /*.sqlite
 vendor
+.svn
+.idea
+*.iml
+

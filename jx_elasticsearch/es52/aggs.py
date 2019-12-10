@@ -19,13 +19,13 @@ from jx_elasticsearch import post as es_post
 from jx_elasticsearch.es52.decoders import AggsDecoder
 from jx_elasticsearch.es52.es_query import Aggs, ExprAggs, FilterAggs, NestedAggs, TermsAggs, simplify, CountAggs
 from jx_elasticsearch.es52.expressions import AndOp, ES52, split_expression_by_path
-from jx_elasticsearch.es52.painless import Painless
+from jx_elasticsearch.es52.painless import Painless, NumberOp
 from jx_elasticsearch.es52.setop import get_pull_stats
 from jx_elasticsearch.es52.util import aggregates
 from jx_python import jx
 from jx_python.expressions import jx_expression_to_function
 from mo_dots import Data, Null, coalesce, join_field, listwrap, literal_field, unwrap, unwraplist, wrap, concat_field
-from mo_future import first, is_text, text_type
+from mo_future import first, is_text, text
 from mo_json import EXISTS, NESTED, OBJECT
 from mo_json.typed_encoder import encode_property
 from mo_logs import Log
@@ -246,7 +246,7 @@ def es_aggsop(es, frum, query):
                     "percents": [percent],
                     "tdigest": {"compression": 2}
                 }}, s))
-                s.pull = jx_expression_to_function(join_field(["values", text_type(percent)]))
+                s.pull = jx_expression_to_function(join_field(["values", text(percent)]))
             elif s.aggregate == "cardinality":
                 for column in columns:
                     path = column.es_column + "_cardinality"
@@ -340,7 +340,7 @@ def es_aggsop(es, frum, query):
                     op = 'min'
 
                 nully = Painless[TupleOp([NULL]*len(s.value.terms))].partial_eval().to_es_script(schema)
-                selfy = text_type(Painless[s.value].partial_eval().to_es_script(schema))
+                selfy = text(Painless[s.value].partial_eval().to_es_script(schema))
 
                 script = {"scripted_metric": {
                     'init_script': 'params._agg.best = ' + nully + ';',
@@ -355,13 +355,13 @@ def es_aggsop(es, frum, query):
             else:
                 Log.error("{{agg}} is not a supported aggregate over a tuple", agg=s.aggregate)
         elif s.aggregate == "count":
-            nest.add(ExprAggs(canonical_name, {"value_count": {"script": text_type(Painless[s.value].partial_eval().to_es_script(schema))}}, s))
+            nest.add(ExprAggs(canonical_name, {"value_count": {"script": text(Painless[s.value].partial_eval().to_es_script(schema))}}, s))
             s.pull = jx_expression_to_function("value")
         elif s.aggregate == "median":
             # ES USES DIFFERENT METHOD FOR PERCENTILES THAN FOR STATS AND COUNT
             key = literal_field(canonical_name + " percentile")
             nest.add(ExprAggs(key, {"percentiles": {
-                "script": text_type(Painless[s.value].to_es_script(schema)),
+                "script": text(Painless[s.value].to_es_script(schema)),
                 "percents": [50]
             }}, s))
             s.pull = jx_expression_to_function(join_field(["50.0"]))
@@ -370,18 +370,18 @@ def es_aggsop(es, frum, query):
             key = literal_field(canonical_name + " percentile")
             percent = mo_math.round(s.percentile * 100, decimal=6)
             nest.add(ExprAggs(key, {"percentiles": {
-                "script": text_type(Painless[s.value].to_es_script(schema)),
+                "script": text(Painless[s.value].to_es_script(schema)),
                 "percents": [percent]
             }}, s))
-            s.pull = jx_expression_to_function(join_field(["values", text_type(percent)]))
+            s.pull = jx_expression_to_function(join_field(["values", text(percent)]))
         elif s.aggregate == "cardinality":
             # ES USES DIFFERENT METHOD FOR CARDINALITY
             key = canonical_name + " cardinality"
-            nest.add(ExprAggs(key, {"cardinality": {"script": text_type(Painless[s.value].to_es_script(schema))}}, s))
+            nest.add(ExprAggs(key, {"cardinality": {"script": text(Painless[s.value].to_es_script(schema))}}, s))
             s.pull = jx_expression_to_function("value")
         elif s.aggregate == "stats":
             # REGULAR STATS
-            nest.add(ExprAggs(canonical_name, {"extended_stats": {"script": text_type(Painless[s.value].to_es_script(schema))}}, s))
+            nest.add(ExprAggs(canonical_name, {"extended_stats": {"script": text(Painless[s.value].to_es_script(schema))}}, s))
             s.pull = get_pull_stats()
 
             # GET MEDIAN TOO!
@@ -389,18 +389,18 @@ def es_aggsop(es, frum, query):
             select_median.pull = jx_expression_to_function({"select": [{"name": "median", "value": "values.50\\.0"}]})
 
             nest.add(ExprAggs(canonical_name + "_percentile", {"percentiles": {
-                "script": text_type(Painless[s.value].to_es_script(schema)),
+                "script": text(Painless[s.value].to_es_script(schema)),
                 "percents": [50]
             }}, select_median))
             s.pull = get_pull_stats()
         elif s.aggregate == "union":
             # USE TERMS AGGREGATE TO SIMULATE union
-            nest.add(TermsAggs(canonical_name, {"script_field": text_type(Painless[s.value].to_es_script(schema))}, s))
+            nest.add(TermsAggs(canonical_name, {"script_field": text(Painless[s.value].to_es_script(schema))}, s))
             s.pull = jx_expression_to_function("key")
         else:
             # PULL VALUE OUT OF THE stats AGGREGATE
             s.pull = jx_expression_to_function(aggregates[s.aggregate])
-            nest.add(ExprAggs(canonical_name, {"extended_stats": {"script": text_type(Painless[s.value].to_es_script(schema))}}, s))
+            nest.add(ExprAggs(canonical_name, {"extended_stats": {"script": text(NumberOp(s.value).partial_eval().to_es_script(schema))}}, s))
 
     acc = NestedAggs(query_path).add(acc)
     split_decoders = get_decoders_by_path(query)
