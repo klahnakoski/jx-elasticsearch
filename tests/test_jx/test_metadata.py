@@ -11,7 +11,7 @@
 from __future__ import absolute_import, division, unicode_literals
 
 from mo_dots import wrap
-from mo_future import text_type
+from mo_future import text
 from mo_logs import Log
 from mo_logs.exceptions import extract_stack
 from pyLibrary.meta import extenstion_method
