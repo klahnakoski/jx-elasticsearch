@@ -1,0 +1,29 @@
+{
+    "use": "elasticsearch",
+    "elasticsearch": {
+        "host": "http://localhost",
+        "port": 9200,
+        "index": "testdata",
+        "type": "test_result",
+        "debug": true,
+        "schema": {
+            "settings": {"index": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "max_inner_result_window": 100000
+            }},
+            "mappings": {
+                "test_result": {
+                }
+            }
+        }
+    },
+    "constants": {
+        "mo_http.http.default_headers": {
+            "Referer": "jx-elasticsearch tests"
+        }
+    },
+    "debug": {
+        "trace": true
+    }
+}

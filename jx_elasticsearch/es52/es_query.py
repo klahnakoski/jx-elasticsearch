@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, unicode_literals
 
 from jx_elasticsearch.es52.expressions import ES52
 from mo_dots import is_data, is_list, startswith_field
-from mo_future import text_type
+from mo_future import text
 from mo_json import value2json
 from mo_logs import Log
 
@@ -29,7 +29,7 @@ class Aggs(object):
             return {"aggs": {
                 name: t.to_es(schema, query_path)
                 for i, t in enumerate(self.children)
-                for name in [t.name if t.name else "_" + text_type(i)]
+                for name in [t.name if t.name else "_" + text(i)]
             }}
         else:
             return {}
@@ -67,6 +67,9 @@ class ExprAggs(Aggs):
     def __init__(self, name, expr, select):
         Aggs.__init__(self, name)
         self.expr = expr
+        if not select:
+            Log.error("Expecting a select")
+
         self.selects = [select]
 
     def __eq__(self, other):
@@ -91,6 +94,24 @@ class ExprAggs(Aggs):
         output = Aggs.copy(self)
         output.expr = self.expr
         return output
+
+
+class CountAggs(Aggs):
+    # DO A DOC COUNT
+
+    def __init__(self, select):
+        Aggs.__init__(self, None)
+        if not select:
+            Log.error("Expecting a select")
+        self.selects = [select]
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        return all(s is t for s, t in zip(self.selects, other.selects))
+
+    def to_es(self, schema, query_path="."):
+        return None  # NO NEED TO WRITE ANYTHING
 
 
 class FilterAggs(Aggs):
@@ -121,26 +142,6 @@ class FilterAggs(Aggs):
     def copy(self):
         output = Aggs.copy(self)
         output.filter = self.filter
-        return output
-
-
-class ComplexAggs(FilterAggs):
-    """
-    FOR COMPLICATED AGGREGATIONS
-    """
-
-    def __init__(self, select):
-        Aggs.__init__(self, "_filter")
-        self.expr = {"filter": {"match_all": {}}}
-        self.selects = [select]
-
-    def to_es(self, schema, query_path="."):
-        self.expr['aggs'] = Aggs.to_es(self, schema, query_path).get('aggs')
-        return self.expr
-
-    def copy(self):
-        output = Aggs.copy(self)
-        output.expr = self.expr
         return output
 
 

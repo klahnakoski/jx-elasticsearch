@@ -1,0 +1,7 @@
+/*.sqlite
+vendor
+.svn
+.idea
+*.iml
+.idea
+
