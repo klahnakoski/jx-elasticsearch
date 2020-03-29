@@ -49,7 +49,12 @@
     },
     "long_description_content_type": "text/markdown",
     "name": "jx-elasticsearch",
-    "packages": ["jx_elasticsearch"],
+    "packages": [
+        "jx_elasticsearch/es52/expressions",
+        "jx_elasticsearch/es52/painless",
+        "jx_elasticsearch/es52",
+        "jx_elasticsearch"
+    ],
     "url": "https://github.com/klahnakoski/jx-elasticsearch",
     "version": "3.57.20089",
     "zip_safe": false

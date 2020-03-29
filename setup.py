@@ -13,7 +13,11 @@ setup(
     long_description='# `jx_elasticsearch`\n\n|Branch      |Status   |\n|------------|---------|\n|master      | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=master)](https://travis-ci.org/klahnakoski/jx-elasticsearch) |\n|dev         | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=dev)](https://travis-ci.org/klahnakoski/jx-elasticsearch)    |\n\n\nThis library implements [JSON Query Expressions](https://github.com/klahnakoski/JSONQueryExpressionTests) atop an Elasticsearch.\n\n\n## Contribution\n\nNew, or old, versions of Elasticsearch should be added by copying the `es52` subdirectory, and altering the implementation to deal with the differences.\n\nThere are two directories in the [ActiveData git history](https://github.com/mozilla/ActiveData/commits/dev) that may help for old versions.\n\n1. `es09` for Elasticsearch version 0.9.x (with MVEL scripting)\n2. `es14` is for any version 1.x variant of Elasticsearch (with Groovy scripting)\n\nBoth of these directories are too old to be used directly, but they do have code templates for their respective scripting language, and they do have other hints about how to construct queries with the limitations of the older versions.\n\n',
     long_description_content_type='text/markdown',
     name='jx-elasticsearch',
-    packages=["jx_elasticsearch"],
+    packages=[    "jx_elasticsearch/es52/expressions",
+                  "jx_elasticsearch/es52/painless",
+                  "jx_elasticsearch/es52",
+                  "jx_elasticsearch"
+                  ],
     url='https://github.com/klahnakoski/jx-elasticsearch',
     version='3.57.20089',
     zip_safe=False
