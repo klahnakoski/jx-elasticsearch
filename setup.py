@@ -3,18 +3,18 @@
 from __future__ import unicode_literals
 from setuptools import setup
 setup(
-    description=str(u'JSON query expressions for Elasticsearch'),
-    license=str(u'MPL 2.0'),
-    author=str(u'Kyle Lahnakoski'),
-    author_email=str(u'kyle@lahnakoski.com'),
-    long_description_content_type=str(u'text/markdown'),
-    include_package_data=True,
+    author='Kyle Lahnakoski',
+    author_email='kyle@lahnakoski.com',
     classifiers=["Development Status :: 4 - Beta","Topic :: Software Development :: Libraries","Topic :: Software Development :: Libraries :: Python Modules","License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)","Programming Language :: Python :: 2.7","Programming Language :: Python :: 3.6"],
-    install_requires=["jx-python>=2.43.19055","mo-dots>=2.43.19055","mo-future>=2.40.19027","mo-json>=2.43.19055","mo-kwargs>=2.43.19055","mo-logs>=2.43.19055","mo-logs>=2.43.19055","mo-math>=2.40.19027","mo-threads>=2.43.19055","mo-times>=2.40.19027","mo-times>=2.40.19027"],
-    version=str(u'2.43.19055'),
-    url=str(u'https://github.com/klahnakoski/jx-elasticsearch'),
-    zip_safe=False,
+    description='JSON query expressions for Elasticsearch',
+    include_package_data=True,
+    install_requires=["jx-python>=3.57.20089","mo-dots>=3.53.20059","mo-future>=3.51.20059","mo-http>=3.57.20089","mo-json>=3.57.20089","mo-kwargs>=3.54.20059","mo-logs>=3.57.20089","mo-logs>=3.57.20089","mo-math>=3.57.20089","mo-threads>=3.57.20089","mo-times>=3.57.20089","mo-times>=3.57.20089","pyLibrary"],
+    license='MPL 2.0',
+    long_description='# `jx_elasticsearch`\n\n|Branch      |Status   |\n|------------|---------|\n|master      | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=master)](https://travis-ci.org/klahnakoski/jx-elasticsearch) |\n|dev         | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=dev)](https://travis-ci.org/klahnakoski/jx-elasticsearch)    |\n\n\nThis library implements [JSON Query Expressions](https://github.com/klahnakoski/JSONQueryExpressionTests) atop an Elasticsearch.\n\n\n## Contribution\n\nNew, or old, versions of Elasticsearch should be added by copying the `es52` subdirectory, and altering the implementation to deal with the differences.\n\nThere are two directories in the [ActiveData git history](https://github.com/mozilla/ActiveData/commits/dev) that may help for old versions.\n\n1. `es09` for Elasticsearch version 0.9.x (with MVEL scripting)\n2. `es14` is for any version 1.x variant of Elasticsearch (with Groovy scripting)\n\nBoth of these directories are too old to be used directly, but they do have code templates for their respective scripting language, and they do have other hints about how to construct queries with the limitations of the older versions.\n\n',
+    long_description_content_type='text/markdown',
+    name='jx-elasticsearch',
     packages=["jx_elasticsearch"],
-    long_description=str(u'# `jx_elasticsearch`\n\n|Branch      |Status   |\n|------------|---------|\n|master      | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=master)](https://travis-ci.org/klahnakoski/jx-elasticsearch) |\n|dev         | [![Build Status](https://travis-ci.org/klahnakoski/jx-elasticsearch.svg?branch=dev)](https://travis-ci.org/klahnakoski/jx-elasticsearch)    |\n\n\nThis library implements [JSON Query Expressions](https://github.com/klahnakoski/JSONQueryExpressionTests) atop an Elasticsearch.\n\n\n## Contribution\n\nNew, or old, versions of Elasticsearch should be added by copying the `es52` subdirectory, and altering the implementation to deal with the differences.\n\nThere are two directories in the [ActiveData git history](https://github.com/mozilla/ActiveData/commits/dev) that may help for old versions.\n\n1. `es09` for Elasticsearch version 0.9.x (with MVEL scripting)\n2. `es14` is for any version 1.x variant of Elasticsearch (with Groovy scripting)\n\nBoth of these directories are too old to be used directly, but they do have code templates for their respective scripting language, and they do have other hints about how to construct queries with the limitations of the older versions.\n\n'),
-    name=str(u'jx-elasticsearch')
+    url='https://github.com/klahnakoski/jx-elasticsearch',
+    version='3.57.20089',
+    zip_safe=False
 )
