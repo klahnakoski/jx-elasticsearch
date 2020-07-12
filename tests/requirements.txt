@@ -1,2 +1,3 @@
-mo-threads
-mo-testing
+git+git://github.com/klahnakoski/mo-threads.git
+git+git://github.com/klahnakoski/mo-testing.git
+git+git://github.com/klahnakoski/pyLibrary.git
