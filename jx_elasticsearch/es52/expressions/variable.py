@@ -18,7 +18,7 @@ from mo_json import BOOLEAN, STRUCT
 
 
 class Variable(Variable_):
-    def to_esfilter(self, schema):
+    def to_es(self, schema):
         v = self.var
         cols = schema.values(v, STRUCT)
         if len(cols) == 0:
@@ -31,11 +31,9 @@ class Variable(Variable_):
                 else es_exists(c.es_column)
             )
         else:
-            return es_and(
-                [
-                    {"term": {c.es_column: True}}
-                    if c.es_type == BOOLEAN
-                    else es_exists(c.es_column)
-                    for c in cols
-                ]
-            )
+            return es_and([
+                {"term": {c.es_column: True}}
+                if c.es_type == BOOLEAN
+                else es_exists(c.es_column)
+                for c in cols
+            ])

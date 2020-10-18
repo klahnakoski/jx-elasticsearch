@@ -9,10 +9,12 @@
 #
 from __future__ import absolute_import, division, unicode_literals
 
-import jx_base
-from jx_base import Column, Table
-from jx_base.meta_columns import META_COLUMNS_NAME, META_COLUMNS_TYPE_NAME, SIMPLE_METADATA_COLUMNS, META_COLUMNS_DESC
+from jx_base import Column
+from jx_base.schema import Schema as BaseSchema
+from jx_base.table import Table
+from jx_base.container import Container
 from jx_base.schema import Schema
+from jx_base.meta_columns import META_COLUMNS_NAME, META_COLUMNS_TYPE_NAME, SIMPLE_METADATA_COLUMNS, META_COLUMNS_DESC
 from jx_python import jx
 from mo_dots import Data, Null, is_data, is_list, unwraplist, to_data, listwrap, split_field
 from mo_dots.lists import last
@@ -32,7 +34,7 @@ COLUMN_EXTRACT_PERIOD = 2 * 60
 ID = {"field": ["es_index", "es_column"], "version": "last_updated"}
 
 
-class ColumnList(Table, jx_base.Container):
+class ColumnList(Table, Container):
     """
     CENTRAL CONTAINER FOR ALL COLUMNS
     SYNCHRONIZED WITH ELASTICSEARCH
@@ -115,11 +117,10 @@ class ColumnList(Table, jx_base.Container):
             )
 
             with Timer("adding columns to structure"):
-                with self.locker:
-                    for r in result.hits.hits._source:
-                        col = doc_to_column(r)
-                        if col:
-                            self._add(col)
+                for r in result.hits.hits._source:
+                    col = doc_to_column(r)
+                    if col:
+                        self._add(col)
 
             Log.note("{{num}} columns loaded", num=result.hits.total)
             if not self.data.get(META_COLUMNS_NAME):
@@ -153,13 +154,25 @@ class ColumnList(Table, jx_base.Container):
                 delete_result = self.es_index.delete_record({"bool": {"should": [
                     {"bool": {"must": [
                         {"term": {"es_index.~s~": es_index}},
-                        {"range": {"timestamp.~n~": {"lt": after.unix}}}
+                        {"range": {"last_updated.~n~": {"lte": after.unix}}}
                     ]}}
                     for es_index, after in results
                 ]}})
-                Log.note("Num deleted = {{delete_result}}", delete_result=delete_result.deleted)
+
+                if DEBUG:
+                    query = {"query": {"terms": {"es_index.~s~": [es_index for es_index, after in results]}}}
+                    verify = self.es_index.search(query)
+                    while verify.hits.total:
+                        Log.note("wait for columns to be gone")
+                        verify = self.es_index.search(query)
+
+                    Log.note(
+                        "Deleted {{delete_result}} columns from {{table}}",
+                        table=[es_index for es_index, after in results],
+                        delete_result=delete_result.deleted
+                    )
             except Exception as cause:
-                Log.error("Problem with delete of table", cause=cause)
+                Log.warning("Problem with delete of table", cause=cause)
             Till(seconds=1).wait()
 
     def _update_from_es(self, please_stop):
@@ -441,7 +454,7 @@ class ColumnList(Table, jx_base.Container):
                 )
             snapshot = self._all_columns()
 
-        from jx_python.containers.list_usingPythonList import ListContainer
+        from jx_python.containers.list import ListContainer
 
         query.frum = ListContainer(META_COLUMNS_NAME, snapshot, self._schema)
         return jx.run(query)
@@ -504,12 +517,12 @@ class ColumnList(Table, jx_base.Container):
                 if c.jx_type not in INTERNAL  # and c.es_column != "_id"
             ]
 
-        from jx_python.containers.list_usingPythonList import ListContainer
+        from jx_python.containers.list import ListContainer
 
         return ListContainer(
             self.name,
             data=output,
-            schema=jx_base.Schema(META_COLUMNS_NAME, SIMPLE_METADATA_COLUMNS),
+            schema=BaseSchema(META_COLUMNS_NAME, SIMPLE_METADATA_COLUMNS),
         )
 
 
@@ -532,7 +545,10 @@ def doc_to_column(doc):
                 Log.warning("{{doc}} has no es_type", doc=doc)
 
         # FIX
-        doc.multi = 1001 if doc.es_type == "nested" else doc.multi
+        if doc.es_type == "nested":
+            doc.multi = 1001
+        if doc.multi == None:
+            doc.multi = 1
 
         # FIX
         if doc.es_column.endswith("."+NESTED_TYPE):

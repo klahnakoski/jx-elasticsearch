@@ -15,16 +15,17 @@ from jx_base.expressions import (
     Variable as Variable_,
 )
 from jx_base.language import is_op
-from jx_elasticsearch.es52.expressions._utils import ES52
 from jx_elasticsearch.es52.expressions.false_op import MATCH_NONE
-from jx_elasticsearch.es52.expressions.or_op import es_or
 from mo_dots import dict_to_data
 from mo_future import first
+from mo_imports import expect
 from mo_json import STRUCT
+
+es_or = expect("es_or")
 
 
 class NotOp(NotOp_):
-    def to_esfilter(self, schema):
+    def to_es(self, schema):
         if is_op(self.term, MissingOp_) and is_op(self.term.expr, Variable_):
             # PREVENT RECURSIVE LOOP
             v = self.term.expr.var
@@ -36,17 +37,14 @@ class NotOp(NotOp_):
             else:
                 return es_or([{"exists": {"field": c.es_column}} for c in cols])
         else:
-            operand = ES52[self.term].to_esfilter(schema)
-            return es_not(operand)
+            if self.simplified:
+                return es_not(self.term.to_es(schema))
+            else:
+                return self.partial_eval().to_es(schema)
 
 
 def es_not(term):
+    not_term = term.get('bool', {}).get('must_not')
+    if not_term:
+        return not_term
     return dict_to_data({"bool": {"must_not": term}})
-
-
-# EXPORT
-from jx_elasticsearch.es52.expressions import literal, or_op
-
-literal.es_not = es_not
-or_op.es_not = es_not
-or_op.NotOp = NotOp
